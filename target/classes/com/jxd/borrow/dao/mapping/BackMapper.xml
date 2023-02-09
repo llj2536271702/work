@@ -1,0 +1,176 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxd.borrow.dao.BackMapper">
+<insert id="add">
+    insert into back(borrowno,money,backtime,backstateno,empno,moneyleft,moneycurrent)
+    values(#{borrowno},#{money},#{backtime},1,#{empno},#{money},#{moneycurrent})
+</insert>
+    <!-- Back getBackbyNo(String borrowno);-->
+<select id="getBackbyNo" resultType="back">
+    select backno, moneyaccount,reason,backtime,backstateno,empno,typeno,moneyleft,moneycurrent,borrowno
+        from back where empno=#{empno} and borrowno=#{borrowno}
+</select>
+    <!-- IPage<Back> getBackList(IPage<Back> page);-->
+
+<!--where money > 2000-->
+<!--getBackAllList-->
+
+
+    <select id="getBackAllList" resultType="java.util.HashMap">
+        select g.backno,g.borrowno,g.money,g.view,g.backtime,g.backstateno,g.empno,
+               g.moneycurrent,g.moneyleft,g.ename,g.backstateinfo,borrow.borrowtime
+        from  ( select b.backno,b.borrowno,b.money,b.view,b.backtime,b.backstateno,b.empno,b.moneycurrent,b.moneyleft,b.ename,s.backstateinfo
+        from (select backno,borrowno,money,view,backtime,backstateno,back.empno,moneycurrent,moneyleft,e.ename
+        from back inner join emp e on back.empno = e.empno ) b  inner join backstate s on b.backstateno = s.backstateno
+        <where>
+           
+            <if test="start != '' and start != null ">
+                and    backtime &gt;= #{start}
+            </if>
+            <if test="end != '' and end != null">
+                and backtime &lt;= #{end}
+            </if>
+            <if test="ename != '' and ename != null">
+                and ename = #{ename}
+            </if>
+        </where>
+        order by backno ) g inner join borrow on borrow.borrowno = g.borrowno
+    </select>
+    <select id="getBackAllListAc" resultType="java.util.HashMap">
+        select b.backno,b.borrowno,b.money,b.view,b.backtime,b.backstateno,b.empno,b.moneycurrent,b.moneyleft,b.ename,s.backstateinfo
+        from (select backno,borrowno,money,view,backtime,backstateno,back.empno,moneycurrent,moneyleft,e.ename
+        from back inner join emp e on back.empno = e.empno ) b  inner join backstate s on b.backstateno = s.backstateno
+        <where>
+            b.money   &lt; 2000
+            <if test="start != '' and start != null ">
+                and    backtime &gt;= #{start}
+            </if>
+            <if test="end != '' and end != null">
+                and backtime &lt;= #{end}
+            </if>
+            <if test="ename != '' and ename != null">
+                and ename = #{ename}
+            </if>
+        </where>
+        order by backno
+    </select>
+
+    <select id="getBackList" resultType="java.util.HashMap">
+     select  c. backno, c.borrowno,c.money,c.view,c.backtime,c.backstateno,c.empno,c.moneycurrent,c.moneyleft,c.typeno, c.typeinfo,backstate.backstateinfo
+        from(
+        select d. backno, d.borrowno,d.money,d.view,d.backtime,d.backstateno,d.empno,d.moneycurrent,d.moneyleft,d.typeno, t.typeinfo
+         from
+        ( select b. backno, b.borrowno,b.money,b.view,b.backtime,b.backstateno,b.empno,b.moneycurrent,b.moneyleft,e.typeno
+        from
+        (select backno,borrowno,money,view,backtime,backstateno,empno,moneycurrent,moneyleft
+               from back
+        <where>
+            empno = #{empno}
+            <if test="borrowno != '' and borrowno != null">
+                and    borrowno = #{borrowno}
+            </if>
+        </where>
+        order by backno)  b inner join  borrow e on b.borrowno = e.borrowno )  d inner join type t on t.typeno = d.typeno ) c
+        inner join backstate on backstate.backstateno = c.backstateno
+    </select>
+    <delete id="delBack">
+        delete from back
+        where backno in
+        <foreach collection="backs" item="backno" open="("  close=")" separator=",">
+            #{backno}
+        </foreach>
+    </delete>
+
+    <update id="passBackUpdate">
+        update back set backstateno = 3 , money = #{money},moneycurrent = #{moneycurrent} ,moneyleft = money - moneycurrent  where backno = #{backno}
+    </update>
+    <insert id="passBackInsert" >
+        insert back (borrowno,money,view,backtime,backstateno,empno,moneyleft,moneycurrent) values (
+            #{borrowno},#{money},#{view},#{backtime},#{backstateno},#{empno},#{moneyleft},#{moneycurrent}
+        )
+    </insert>
+
+   <!-- <insert id="passBackInsert" >
+        insert into back
+    </insert>-->
+ <!-- int selectBackno(Map<String ,String> map);-->
+    <select id="selectBackno" resultType="int">
+        select ifnull(max(backno),0) from back where empno=#{empno} and borrowno = #{borrowno}
+    </select>
+    <select id="seleMoneyleft" resultType="double">
+        select moneyleft from back  where backno=#{backno}
+    </select>
+
+    <update id="updateBackstateno" >
+        update back set backstateno = 2 where empno = #{empno} and borrowno = #{borrowno} and
+                                              moneyleft = #{moneyleft}
+    </update>
+
+   <!-- boolean addBackByAc(Map<String,String> map);
+    boolean changeBackstatenoByAc(Map<String,String> map);-->
+    <!--只经过财务-->
+    <insert id="addBackByAc">
+        insert into back(borrowno,money,view,backtime,backstateno,empno,moneyleft) values(#{borrowno},#{money},#{view},#{backtime},2,#{empno},#{money})
+    </insert>
+    <insert id="addBackByMa">
+        insert into back(borrowno,money,view,backtime,backstateno,empno,moneyleft) values(#{borrowno},#{money},#{view},#{backtime},1,#{empno},#{money})
+    </insert>
+    <update id="changeBackstatenoByAcstre" >
+        update back set backstateno = 3 where empno = #{empno} and borrowno = #{borrowno}
+    </update>
+    <!--经过部门-->
+    <update id="changeBorrowstateByAc">
+        update borrow set borrowstateno = 5 where empno = #{empno} and borrowno = #{borrowno}
+    </update>
+    <update id="changeBackstatenoByAc">
+        update back set backstateno =  3 where empno = #{empno} and borrowno = #{borrowno}
+    </update>
+
+
+    <!--boolean insertBacknew(Map<String,String> map);-->
+    <!--<insert id="insertBacknew"  >
+        insert into back (borrowno ,money,backtime,backstateno,empno,moneyleft)
+    </insert>
+-->
+
+    <!--changeBackstatenoByMa-->
+    <update id="changeBackstatenoByMa" >
+        update back set backstateno = 3 , moneycurrent = #{moneycurrent}
+        where backno = #{backno}
+    </update>
+
+    <update id="changeBackstatenoByAcs" >
+        update back set backstateno = 2 , moneycurrent = #{moneycurrent}
+        where backno = #{backno}
+    </update>
+
+
+    <!--s是部分还款-->
+    <update id="passBackbyAc" >
+        update back set backstateno = 6, moneyleft = moneyleft - moneycurrent where backno = #{backno}
+    </update>
+
+    <update id="passBackbyAcs">
+        update back set backstateno = 5, moneyleft = moneyleft - moneycurrent where backno = #{backno}
+    </update>
+
+      <update id="nopassBackbyAc">
+        update back set backstateno = 7 where backno = #{backno}
+    </update>
+    
+    <!--boolean passBackbyMa();
+    boolean passBackbyMas();-->
+    <update id="passBackbyMa">
+        update back set backstateno = 4 where backno = #{backno}
+    </update>
+    <update id="nopassBackbyMa">
+        update back set backstateno = 8 where backno = #{backno}
+    </update>
+
+    <update id="changeBackstatenoByMas" >
+        update back set backstateno = 4  where  backno = #{backno}
+    </update>
+
+</mapper>

@@ -1,0 +1,37 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxd.borrow.dao.DeptMapper">
+
+
+    <select id="getAllDept" resultType="dept">
+        select deptname,deptno from dept
+    </select>
+    <!--  IPage<Map<String,Object>> getAllDeptInfo(IPage<Map<String,Object>> page, @Param("deptname") String deptname);
+-->
+<select id="getAllDeptInfo" resultType="java.util.HashMap">
+    select d.* , IFNULL(t.c,
+        0)  countemp  from dept d left join (select deptno , count(empno) c  from emp group by deptno ) t on d.deptno = t.deptno
+    <where>
+        <if test=" deptname != '' and deptname != null">
+            d.deptname like '%' #{deptname} '%'
+        </if>
+    </where>
+</select>
+    <!--boolean add(Map<String,Object> deptInfo);
+    boolean update(Map<String,Object> deptInfo);-->
+    <insert id="add" >
+        insert into dept(deptname,createtime)
+        values (#{deptname},#{createtime})
+    </insert>
+    <update id="update">
+        update dept set deptname=#{deptname} ,createtime = #{createtime}
+        where deptno = #{deptno}
+    </update>
+
+    <delete id="deleteDept">
+delete from dept where deptno = #{deptno}
+
+    </delete>
+</mapper>

@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="com.jxd.borrow.dao.BorrowMapper">
+<insert id="add">
+    insert into  borrow(money,reason,borrowtime,borrowstateno,empno,typeno )
+    values(#{money},#{reason},#{borrowtime},1,#{empno},#{typeno})
+</insert>
+<!--    IPage<Borrow> getAllBorrow(IPage<Borrow> page , @Param("reasonno") Integer reasonno,@Param("money") Double money);-->
+    <!--    IPage<Map<String,Object>> getAllBorrow(IPage<Map<String,Object>> page,@Param("ename")String ename,@Param("typeno")Integer typeno);-->
+    <!--部门审核时的查询操作-->
+    <select id="getAllBorrow" resultType="java.util.HashMap">
+        select d.borrowno, d.money, d.reason, d.borrowtime, d.borrowstateno, d.empno,d.typeno, d.view,
+        d.typeinfo,d.ename,s.borrowstateinfo
+        from(
+        select p.borrowno, p.money, p.reason, p.borrowtime, p.borrowstateno, p.empno, p.typeno, p.view,
+        p.typeinfo,e.ename
+        from( select b.borrowno, b.money, b.reason, b.borrowtime, b.borrowstateno, b.empno,b.typeno,b.view,t.typeinfo
+        from borrow b inner join type t on b.typeno = t.typeno) p
+            left join emp e on e.empno = p.empno
+        <where>
+             p.money &gt;=   2000
+            <if test="ename != '' and ename != null">
+                and e.ename = #{ename}
+            </if>
+            <if test="typeno != '' and typeno != null">
+                and p.typeno = #{typeno}
+            </if>
+        </where>) d  inner join borrowstate s on d.borrowstateno = s.borrowstateno
+        order by d.borrowno
+    </select>
+    <select id="getAllBorrowAc" resultType="java.util.HashMap">
+        select d.borrowno, d.money, d.reason, d.borrowtime, d.borrowstateno, d.empno,d.typeno, d.view,
+        d.typeinfo,d.ename,s.borrowstateinfo
+        from(
+        select p.borrowno, p.money, p.reason, p.borrowtime, p.borrowstateno, p.empno, p.typeno, p.view,
+        p.typeinfo,e.ename
+        from( select b.borrowno, b.money, b.reason, b.borrowtime, b.borrowstateno, b.empno,b.typeno,b.view,t.typeinfo
+        from borrow b inner join type t on b.typeno = t.typeno) p left join emp e on e.empno = p.empno
+        <where>
+           ( p.money  &lt;  2000 or p.borrowstateno = 4 )
+            <if test="ename != '' and ename != null">
+                and e.ename like #{ename}
+            </if>
+            <if test="typeno != '' and typeno != null">
+                and p.typeno = #{typeno}
+            </if>
+        </where>  ) d  inner join borrowstate s on d.borrowstateno = s.borrowstateno
+         order by d.borrowno
+    </select>
+
+    <select id="getPersonalBorrow" resultType="java.util.HashMap">
+     select  a.borrowno, a.money, a.reason, a.borrowtime, a.borrowstateno, a.empno,a.typeno,  a.typeinfo,a.borrowstateinfo,
+             emp.ename
+    from  ( select p.borrowno, p.money, p.reason, p.borrowtime, p.borrowstateno, p.empno,p.typeno,  p.typeinfo,s.borrowstateinfo
+    from (select b.borrowno, b.money, b.reason, b.borrowtime, b.borrowstateno, b.empno,b.typeno,  t.typeinfo
+    from borrow b  inner join type t on b.typeno = t.typeno
+    <where>
+        b.empno = #{empno}
+        <if test="money != '' and money != null">
+         and    b.money = #{money}
+        </if>
+        <if test="typeno != '' and typeno != null">
+        and b.typeno = #{typeno}
+        </if>
+    </where>
+    order by borrowno) p inner join borrowstate s on p.borrowstateno = s.borrowstateno ) a
+    inner join emp on a.empno = emp.empno
+</select>
+<select id="getAllType" resultType="type">
+    select typeno , typeinfo from type
+</select>
+    <!--    boolean add(Borrow borrow); -->
+<delete id="delBorrow">
+    delete from borrow
+    where borrowno in
+    <foreach collection="borrows" item="borrow" open="("  close=")" separator=",">
+        #{borrow}
+    </foreach>
+</delete>
+
+<update id="updateBorrow" >
+    update borrow set money = #{money}, reason=#{reason},
+    borrowtime=#{borrowtime} ,  borrowstateno=#{borrowstateno}, typeno=#{typeno}
+    where empno = #{empno} and borrowno = #{borrowno}
+</update>
+
+<update id="changeBorrowState">
+    update borrow set borrowstateno = 2 where empno = #{empno} and borrowno = #{borrowno}
+
+</update>
+
+    <update id="changeBorrowState02">
+        update borrow set borrowstateno = 3 where empno = #{empno} and borrowno = #{borrowno}
+    </update>
+<!--借款-->
+    <update id="passBorrowbyMana">
+        update borrow set borrowstateno = 4 ,view = #{view} where empno = #{empno} and borrowno = #{borrowno}
+    </update>
+
+    <update id="passBorrowbyAc">
+        update borrow set borrowstateno = 5 ,view = #{view} where empno = #{empno} and borrowno = #{borrowno}
+    </update>
+<!--//还款-->
+    <update id="nopassBorrowbyMana">
+        update borrow set borrowstateno = 12, view = #{view} where empno = #{empno} and borrowno = #{borrowno}
+    </update>
+    <update id="nopassBorrowbyManaAc">
+        update borrow set borrowstateno = 12, view = #{view} where empno = #{empno} and borrowno = #{borrowno}
+    </update>
+    <update id="nopassborrowmoneybyMana">
+        update borrow set borrowstateno = 8, view = #{view} where empno = #{empno} and borrowno = #{borrowno}
+    </update>
+    <update id="nopassborrowmoneybyAc">
+        update borrow set borrowstateno = 8, view = #{view} where empno = #{empno} and borrowno = #{borrowno}
+
+    </update>
+
+
+
+
+    <!-- List<String> getBorrows(Map<String,String> map );-->
+    <select id="getBorrows" resultType="string">
+        select borrowno from back where empno = #{empno}
+    </select>
+
+    <update id="passBorrowStateCaseBack" >
+        update borrow set borrowstateno = 7 where borrowno = #{borrowno}
+    </update>
+    <update id="passBorrowStateCaseBacks" >
+        update borrow set borrowstateno = 6 where borrowno = #{borrowno}
+    </update>
+
+
+    <!--boolean changeBorrowstatenoByMa(Map<String,String> map);
+    boolean changeBorrowstatenoByAc(Map<String,String> map);-->
+    <update id="changeBorrowstatenoByMa" >
+        update borrow set borrowstateno = 10 where borrowno = #{borrowno}
+    </update>
+    <update id="changeBorrowstatenoByAc" >
+        update borrow set borrowstateno = 9 where borrowno = #{borrowno}
+    </update>
+
+    <update id="changeBorrowstatenoByMas" >
+        update borrow set borrowstateno = 11 where borrowno = #{borrowno}
+    </update>
+
+
+</mapper>
